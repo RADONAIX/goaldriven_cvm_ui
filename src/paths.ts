@@ -1,0 +1,20 @@
+export const paths = {
+  home: '/',
+  auth: { signIn: '/auth/sign-in', signUp: '/auth/sign-up', resetPassword: '/auth/reset-password' },
+  dashboard: {
+    overview: '/dashboard',
+    account: '/dashboard/account',
+    persona_vision: '/dashboard/person_vision',
+    customers: '/dashboard/customers',
+    integrations: '/dashboard/integrations',
+    settings: '/dashboard/settings',
+    churnInsights: '/dashboard/churn_insights',
+    churnScore: '/dashboard/churnScore',
+    churnWhatIf: '/dashboard/churnWhatIf',
+    smartOfferX: '/dashboard/SmartOfferX',
+    nboInsights: '/dashboard/nbo_Insights',
+    persona_360 : '/dashboard/persona_360',
+    persona_grid : '/dashboard/persona_grid',
+  },
+  errors: { notFound: '/errors/not-found' },
+} as const;
