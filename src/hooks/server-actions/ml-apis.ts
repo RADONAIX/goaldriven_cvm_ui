@@ -163,12 +163,13 @@ type Parameter = {
 
 export async function getChartInsights({ title, desc, data }: { title: string; desc: string; data: any }) {
   const payload = {
+    module: 'persona_360',
     visualization: title,
     chart_description: desc,
     data_summary: data,
   };
   try {
-    const response = await fetch(API_BASES.chartInsights, {
+    const response = await fetch(`${API_BASES.cvmApi}/insights`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -180,23 +181,33 @@ export async function getChartInsights({ title, desc, data }: { title: string; d
       throw new Error(`API error: ${response.statusText}`);
     }
 
-    const data = await response.json();
-
-    return { success: true, data };
+    // CVM backend returns an envelope: { data: { insight_title, summary, key_points, recommended_actions } }
+    const body = await response.json();
+    const d = body?.data ?? {};
+    return {
+      success: true,
+      data: {
+        insight_title: d.insight_title,
+        summary: d.summary,
+        insight_summary: d.key_points ?? [], // <AiInsight> reads `insight_summary`
+        recommended_actions: d.recommended_actions ?? [],
+      },
+    };
   } catch (error: any) {
-    console.error('Retention strategy error:', error.message);
+    console.error('Chart insights error:', error.message);
     throw new Error(`API error: ${error.message}`);
   }
 }
 
 export async function getChartInsightsRetention({ title, desc, data }: { title: string; desc: string; data: any }) {
   const payload = {
+    module: 'persona_churn',
     visualization: title,
     chart_description: desc,
     data_summary: data,
   };
   try {
-    const response = await fetch(API_BASES.chartInsightsRetention, {
+    const response = await fetch(`${API_BASES.cvmApi}/insights`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -208,11 +219,20 @@ export async function getChartInsightsRetention({ title, desc, data }: { title: 
       throw new Error(`API error: ${response.statusText}`);
     }
 
-    const data = await response.json();
-
-    return { success: true, data };
+    // CVM backend returns an envelope: { data: { insight_title, summary, key_points, recommended_actions } }
+    const body = await response.json();
+    const d = body?.data ?? {};
+    return {
+      success: true,
+      data: {
+        insight_title: d.insight_title,
+        summary: d.summary,
+        key_points: d.key_points ?? [], // <AiInsightRetention> reads `key_points`
+        recommended_actions: d.recommended_actions ?? [],
+      },
+    };
   } catch (error: any) {
-    console.error('Retention strategy error:', error.message);
+    console.error('Chart insights (retention) error:', error.message);
     throw new Error(`API error: ${error.message}`);
   }
 }
