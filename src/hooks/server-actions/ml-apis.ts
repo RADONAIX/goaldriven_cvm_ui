@@ -290,22 +290,35 @@ export async function getBehaviourAnalysisCharts() {
 
 export async function personaGridGetInsight() {
   try {
-    const response = await fetch(API_BASES.personaGridInsight, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+    // Pull the grid dashboard data from the CVM backend, then summarise it.
+    const dashRes = await fetch(`${API_BASES.cvmApi}/persona-grid/global`);
+    const dashboard = dashRes.ok ? ((await dashRes.json())?.data ?? {}) : {};
+
+    const r = await fetch(`${API_BASES.cvmApi}/insights`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        module: 'persona_grid',
+        visualization: 'Persona Grid segmentation overview',
+        chart_description: 'Segmentation KPIs, lifecycle, ARPU segmentation, sunburst',
+        data_summary: dashboard,
+      }),
     });
-
-    if (!response.ok) {
-      throw new Error(`API error: ${response.statusText}`);
+    if (!r.ok) {
+      throw new Error(`API error: ${r.statusText}`);
     }
-
-    const data = await response.json();
-
-    return { success: true, data };
+    const d = (await r.json())?.data ?? {};
+    // Grid dialog renders key_insights as a STRING.
+    return {
+      success: true,
+      data: {
+        overview: d.summary ?? '',
+        key_insights: (d.key_points ?? []).map((p: string) => `• ${p}`).join('\n'),
+        strategic_takeaway: (d.recommended_actions ?? []).join(' '),
+      },
+    };
   } catch (error: any) {
-    console.error('Retention strategy error:', error.message);
+    console.error('Grid module insight error:', error.message);
     throw new Error(`API error: ${error.message}`);
   }
 }

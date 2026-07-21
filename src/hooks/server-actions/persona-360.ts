@@ -454,22 +454,35 @@ export async function getMSISDNInisght(msisdn: string) {
 
 export async function persona360GetInsight() {
   try {
-    const response = await fetch(API_BASES.persona360Insight, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+    // Pull the 360 overview data from the CVM backend, then summarise it.
+    const dashRes = await fetch(`${API_BASES.cvmApi}/persona-360/overview`);
+    const dashboard = dashRes.ok ? ((await dashRes.json())?.data ?? {}) : {};
+
+    const r = await fetch(`${API_BASES.cvmApi}/insights`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        module: 'persona_360',
+        visualization: 'Persona 360 portfolio overview',
+        chart_description: 'Subscriber, usage, revenue and CSAT KPIs',
+        data_summary: dashboard,
+      }),
     });
-
-    if (!response.ok) {
-      throw new Error(`API error: ${response.statusText}`);
+    if (!r.ok) {
+      throw new Error(`API error: ${r.statusText}`);
     }
-
-    const data = await response.json();
-
-    return { success: true, data };
+    const d = (await r.json())?.data ?? {};
+    // 360 dialog maps over key_insights, so it must be an ARRAY.
+    return {
+      success: true,
+      data: {
+        overview: d.summary ?? '',
+        key_insights: d.key_points ?? [],
+        strategic_takeaway: (d.recommended_actions ?? []).join(' '),
+      },
+    };
   } catch (error: any) {
-    console.error('Retention strategy error:', error.message);
+    console.error('360 module insight error:', error.message);
     throw new Error(`API error: ${error.message}`);
   }
 }
