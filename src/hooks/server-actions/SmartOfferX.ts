@@ -26,7 +26,10 @@ export async function fetchSmartOfferXData(msisdn: number) {
   const result = await query(sql, [msisdn]);
   try {
     
-    const response = await fetch(API_BASES.smartOfferX + `?msisdn=${msisdn}`, {
+    // CVM backend: GET /api/v1/nbo/smart-offer/{msisdn} → { data: { offers: [...] } }
+    // Offer shape (title/reason/agent_pitch/acceptance_rate/arpu_increase) already
+    // matches what the SmartOfferX page renders.
+    const response = await fetch(`${API_BASES.cvmApi}/nbo/smart-offer/${msisdn}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -37,12 +40,12 @@ export async function fetchSmartOfferXData(msisdn: number) {
       throw new Error(`API error: ${response.statusText}`);
     }
 
-    const offerData = await response.json();
+    const body = await response.json();
 
     return {
       error: null,
       data: result.rows,
-      smartOffer: offerData.offers,
+      smartOffer: body?.data?.offers ?? null,
     };
   } catch (error) {
     console.error('Error fetching smart offer data:', error);

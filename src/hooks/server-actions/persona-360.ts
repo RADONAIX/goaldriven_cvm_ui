@@ -3,6 +3,7 @@
 import { query } from '@/lib/db';
 
 import API_BASES from '../../../apiConfig';
+import { getCustomerNarrative } from './ml-apis';
 
 export async function getCustomersDrillBy(gender: string) {
   const result = await query(
@@ -436,39 +437,16 @@ export async function getMSISDNInisght(msisdn: string) {
       [msisdn]
     );
 
-    const api = `${API_BASES.customerInsight360}`;
-
-    // Exclude customer_lifetime_value (CLV) from the customer_story API payload only.
-    // It's still selected above so the UI can display the CLV tile via the return below.
-    const { customer_lifetime_value, ...custForApi } = custRes?.rows[0] ?? {};
-
-    const response = await fetch(api, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        msisdn,
-        details: {
-          ...custForApi,
-          ...usageRes?.rows[0],
-        },
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`API error: ${response.statusText}`);
-    }
-
-    const data = await response.json();
-
-    return {
-      ...data,
+    const profile = {
       ...custRes?.rows[0],
       ...usageRes?.rows[0],
     };
+    // AI narrative from the CVM backend (non-fatal — search still works if it fails).
+    const ai = await getCustomerNarrative('persona_360', msisdn, profile);
+
+    return { ...ai, ...profile };
   } catch (error: any) {
-    console.error('Retention strategy error:', error.message);
+    console.error('360 customer search error:', error.message);
     throw new Error(`API error: ${error.message}`);
   }
 }

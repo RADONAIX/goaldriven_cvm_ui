@@ -237,6 +237,34 @@ export async function getChartInsightsRetention({ title, desc, data }: { title: 
   }
 }
 
+// Per-customer AI narrative from the CVM backend's /api/v1/insights.
+// NON-FATAL: returns {} on any failure so MSISDN search still shows SQL data.
+// Maps the insight envelope to the { short_story, highlight } the dialogs render.
+export async function getCustomerNarrative(
+  module: string,
+  msisdn: string | number,
+  profile: any
+): Promise<{ short_story?: string; highlight?: string }> {
+  try {
+    const r = await fetch(`${API_BASES.cvmApi}/insights`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        module,
+        visualization: `Customer ${msisdn} profile`,
+        chart_description: 'Single-customer profile narrative',
+        data_summary: profile,
+      }),
+    });
+    if (!r.ok) return {};
+    const d = (await r.json())?.data ?? {};
+    return { short_story: d.summary, highlight: d.insight_title };
+  } catch (error: any) {
+    console.error('Customer narrative failed (non-fatal):', error?.message);
+    return {};
+  }
+}
+
 export async function getBehaviourAnalysisCharts() {
   try {
     const response = await fetch(API_BASES.gridCharts, {

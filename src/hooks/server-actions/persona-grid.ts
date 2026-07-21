@@ -2,7 +2,7 @@
 
 import { query } from '@/lib/db';
 
-import API_BASES from '../../../apiConfig';
+import { getCustomerNarrative } from './ml-apis';
 
 export default async function getSegmentDataForSunburst() {
   const sql = `
@@ -190,21 +190,6 @@ export async function getSubscriberMigrationAnalysis() {
 
 export async function getMSISDNInisghtGrid(msisdn: string) {
   try {
-    const api = `${API_BASES.customerInsight}?msisdn=${msisdn}`;
-
-    const response = await fetch(api, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`API error: ${response.statusText}`);
-    }
-
-    const data = await response.json();
-
     const custRes = await query(
       `	select age , msisdn, full_name, gender , subscriber_type, arpu , retention_score , 
         promotion_score , stickness_score ,
@@ -279,14 +264,15 @@ export async function getMSISDNInisghtGrid(msisdn: string) {
       [msisdn]
     );
 
-    return {
-      ...data,
+    const profile = {
       ...custRes?.rows[0],
       ...decileRes?.rows[0],
       ...usageRes?.rows[0],
     };
+    const ai = await getCustomerNarrative('persona_grid', msisdn, profile);
+    return { ...ai, ...profile };
   } catch (error: any) {
-    console.error('Retention strategy error:', error.message);
+    console.error('Grid customer search error:', error.message);
     throw new Error(`API error: ${error.message}`);
   }
 }
