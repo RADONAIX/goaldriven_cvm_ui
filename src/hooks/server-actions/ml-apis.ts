@@ -244,7 +244,12 @@ export async function getCustomerNarrative(
   module: string,
   msisdn: string | number,
   profile: any
-): Promise<{ short_story?: string; highlight?: string }> {
+): Promise<{
+  short_story?: string;
+  highlight?: string;
+  customer_story?: string;
+  key_insight?: string;
+}> {
   try {
     const r = await fetch(`${API_BASES.cvmApi}/insights`, {
       method: 'POST',
@@ -258,7 +263,14 @@ export async function getCustomerNarrative(
     });
     if (!r.ok) return {};
     const d = (await r.json())?.data ?? {};
-    return { short_story: d.summary, highlight: d.insight_title };
+    // The two search dialogs use different field names for the same content:
+    //   grid → short_story / highlight,  360 → customer_story / key_insight.
+    return {
+      short_story: d.summary,
+      customer_story: d.summary,
+      highlight: d.insight_title,
+      key_insight: d.insight_title,
+    };
   } catch (error: any) {
     console.error('Customer narrative failed (non-fatal):', error?.message);
     return {};
