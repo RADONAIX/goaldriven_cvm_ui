@@ -267,7 +267,9 @@ export async function getCustomerNarrative(
 
 export async function getBehaviourAnalysisCharts() {
   try {
-    const response = await fetch(API_BASES.gridCharts, {
+    // CVM backend: GET /api/v1/persona-grid/segments → { data: [{segment_id,
+    // segment_name, promotion_score, stickiness_score, arpu, customer_count}] }
+    const response = await fetch(`${API_BASES.cvmApi}/persona-grid/segments`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -278,11 +280,16 @@ export async function getBehaviourAnalysisCharts() {
       throw new Error(`API error: ${response.statusText}`);
     }
 
-    const data = await response.json();
-
+    const body = await response.json();
+    const data = (body?.data ?? []).map((s: any) => ({
+      ...s,
+      promotion_score: Number(s.promotion_score),
+      stickiness_score: Number(s.stickiness_score),
+      arpu: Number(s.arpu),
+    }));
     return { success: true, data };
   } catch (error: any) {
-    console.error('Retention strategy error:', error.message);
+    console.error('Behaviour analysis charts error:', error.message);
     throw new Error(`API error: ${error.message}`);
   }
 }
